@@ -8,7 +8,10 @@ module.exports = function (grunt) {
   grunt.initConfig({
     shell: {
       browserify: {
-        command: "./node_modules/.bin/browserify  -e src/adapters/jquery.js  -i 'jsdom' -g varify > dist/fhir-client-jquery.js; ./node_modules/.bin/browserify  -e src/adapters/angularjs.js  -i 'jsdom' -g varify > dist/fhir-client-angularjs.js; ./node_modules/.bin/browserify  -e src/adapters/bundle.js  -i 'jsdom' -g varify > dist/fhir-client.js",
+        command: [
+        "browserify  -e ./src/adapters/jquery.js  -i 'jsdom' -g varify > ./dist/fhir-client-jquery.js", 
+        "browserify  -e ./src/adapters/angularjs.js  -i 'jsdom' -g varify > ./dist/fhir-client-angularjs.js",
+        "browserify  -e ./src/adapters/bundle.js  -i 'jsdom' -g varify > ./dist/fhir-client.js"].join('&&'),
         options: {
           failOnError: true,
           stderr: true

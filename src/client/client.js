@@ -41,7 +41,7 @@ function FhirClient(p) {
     client.api = fhir({
         baseUrl: server.serviceUrl,
         auth: auth
-    });
+    }, Adapter.get());
     
     if (p.patientId) {
         client.patient = {};
@@ -50,7 +50,7 @@ function FhirClient(p) {
             baseUrl: server.serviceUrl,
             auth: auth,
             patient: p.patientId
-        });
+        }, Adapter.get());
         client.patient.read = function(){
             return client.get({resource: 'Patient'});
         };
@@ -133,10 +133,10 @@ function FhirClient(p) {
         url: url,
         dataType: 'blob'
       }))
-      .done(function(blob){
+      .then(function(blob){
         ret.resolve(blob);
       })
-      .fail(function(){
+      .catch(function(){
         ret.reject("Could not fetch " + url, arguments);
       });
       return ret.promise;

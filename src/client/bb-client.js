@@ -88,7 +88,7 @@ function completeCodeFlow(params){
       redirect_uri: state.client.redirect_uri
   };
 
-  var headers = {};
+  var headers = { 'Content-Type': 'application/x-www-form-urlencoded'};
 
   if (state.client.secret) {
     headers['Authorization'] = 'Basic ' + btoa(state.client.client_id + ':' + state.client.secret);
@@ -99,9 +99,10 @@ function completeCodeFlow(params){
   Adapter.get().http({
     method: 'POST',
     url: state.provider.oauth2.token_uri,
-    data: data,
+    data: $.param(data),
     headers: headers
-  }).then(function(authz){
+  }).then(function(response){
+       var authz = response.data;
        for (var i in params) {
           if (params.hasOwnProperty(i)) {
              authz[i] = params[i];
@@ -121,7 +122,7 @@ function completePageReload(){
   process.nextTick(function(){
     d.resolve(getPreviousToken());
   });
-  return d;
+  return d.promise;
 }
 
 function readyArgs(){
@@ -179,7 +180,7 @@ BBClient.ready = function(input, callback, errback){
   } else { // token flow
     accessTokenResolver = completeTokenFlow(args.input);
   }
-  accessTokenResolver.done(function(tokenResponse){
+  accessTokenResolver.then(function(tokenResponse){
 
     if (!tokenResponse || !tokenResponse.state) {
       return args.errback("No 'state' parameter found in authorization response.");
@@ -217,7 +218,7 @@ BBClient.ready = function(input, callback, errback){
     ret.tokenResponse = JSON.parse(JSON.stringify(tokenResponse));
     args.callback(ret);
 
-  }).fail(function(){
+  }).catch(function(){
     args.errback("Failed to obtain access token.");
   });
 
@@ -246,7 +247,8 @@ function providers(fhirServiceUrl, provider, callback, errback){
     method: "GET",
     url: stripTrailingSlash(fhirServiceUrl) + "/metadata"
   }).then(
-    function(r){
+    function(response){
+      var r = response.data;
       var res = {
         "name": "SMART on FHIR Testing Server",
         "description": "Dev server for SMART on FHIR",

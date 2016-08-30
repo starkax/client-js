@@ -9,9 +9,7 @@ module.exports = function (grunt) {
     shell: {
       browserify: {
         command: [
-        "browserify  -e ./src/adapters/jquery.js  -i 'jsdom' -g varify > ./dist/fhir-client-jquery.js", 
-        "browserify  -e ./src/adapters/angularjs.js  -i 'jsdom' -g varify > ./dist/fhir-client-angularjs.js",
-        "browserify  -e ./src/adapters/bundle.js  -i 'jsdom' -g varify > ./dist/fhir-client.js"].join('&&'),
+        "browserify  -e ./src/adapters/angularjs.js  -i 'jsdom' -g varify > ./dist/fhir-client-angularjs.js"].join('&&'),
         options: {
           failOnError: true,
           stderr: true
@@ -32,3 +30,7 @@ module.exports = function (grunt) {
   grunt.registerTask('browserify', 'Browserify to create window.FHIR', ['shell:browserify']);
   grunt.registerTask('default', ['browserify', 'uglify:minifiedLib']);
 };
+
+//  "browserify  -e ./src/adapters/angularjs.js  -i 'jsdom' -g varify > ./dist/fhir-client-angularjs.js",
+ //       "browserify  -e ./src/adapters/bundle.js  -i 'jsdom' -g varify > ./dist/fhir-client.js"
+ //"browserify  -e ./src/adapters/jquery.js  -i 'jsdom' -g varify > ./dist/fhir-client-jquery.js"

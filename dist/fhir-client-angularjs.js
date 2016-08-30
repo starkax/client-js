@@ -22241,24 +22241,27 @@ module.exports = function jwa(algorithm) {
 }).call(this,{"isBuffer":require("../../../../../../../../../AppData/Roaming/npm/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
 },{"../../../../../../../../../AppData/Roaming/npm/node_modules/browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":224,"base64url":228,"crypto":6,"util":221}],230:[function(require,module,exports){
 (function() {
-
+    
     var smart = require('../client/entry');
+    var oauth2 = require('../client/bb-client');
+    var client = require('../client/client');
+    
+    angular.module('ng-smart', ['ng', 'ng-fhir']);
 
-    angular.module('ng-fhir', ['ng']);
-
-    angular.module('ng-fhir').provider('$fhir', function() {
+    angular.module('ng-smart').provider('$smart', function() {
         var prov;
         return prov = {
-            $get: function($http, $q) {
-                var adapter = {http: $http, defer: $q.defer, fhirjs: fhir};
-                return smart(adapter);
+            $get: function($http, $q, $fhir) {
+                var adapter = {http: $http, defer: $q.defer, fhirjs: $fhir};
+                smart(adapter);
+                return {client: client, oauth2: oauth2}
             }
         };
     });
 
 }).call(this);
 
-},{"../client/entry":234}],231:[function(require,module,exports){
+},{"../client/bb-client":232,"../client/client":233,"../client/entry":234}],231:[function(require,module,exports){
 var adapter;
 
 var Adapter = module.exports =  {debug: true}
@@ -22363,7 +22366,7 @@ function completeCodeFlow(params){
       redirect_uri: state.client.redirect_uri
   };
 
-  var headers = {};
+  var headers = { 'Content-Type': 'application/x-www-form-urlencoded'};
 
   if (state.client.secret) {
     headers['Authorization'] = 'Basic ' + btoa(state.client.client_id + ':' + state.client.secret);
@@ -22374,9 +22377,10 @@ function completeCodeFlow(params){
   Adapter.get().http({
     method: 'POST',
     url: state.provider.oauth2.token_uri,
-    data: data,
+    data: $.param(data),
     headers: headers
-  }).then(function(authz){
+  }).then(function(response){
+       var authz = response.data;
        for (var i in params) {
           if (params.hasOwnProperty(i)) {
              authz[i] = params[i];
@@ -22396,7 +22400,7 @@ function completePageReload(){
   process.nextTick(function(){
     d.resolve(getPreviousToken());
   });
-  return d;
+  return d.promise;
 }
 
 function readyArgs(){
@@ -22454,7 +22458,7 @@ BBClient.ready = function(input, callback, errback){
   } else { // token flow
     accessTokenResolver = completeTokenFlow(args.input);
   }
-  accessTokenResolver.done(function(tokenResponse){
+  accessTokenResolver.then(function(tokenResponse){
 
     if (!tokenResponse || !tokenResponse.state) {
       return args.errback("No 'state' parameter found in authorization response.");
@@ -22521,7 +22525,8 @@ function providers(fhirServiceUrl, provider, callback, errback){
     method: "GET",
     url: stripTrailingSlash(fhirServiceUrl) + "/metadata"
   }).then(
-    function(r){
+    function(response){
+      var r = response.data;
       var res = {
         "name": "SMART on FHIR Testing Server",
         "description": "Dev server for SMART on FHIR",
@@ -22731,7 +22736,7 @@ function FhirClient(p) {
     client.api = fhir({
         baseUrl: server.serviceUrl,
         auth: auth
-    });
+    }, {http: Adapter.get().http, defer: Adapter.get().defer});
     
     if (p.patientId) {
         client.patient = {};
@@ -22740,7 +22745,7 @@ function FhirClient(p) {
             baseUrl: server.serviceUrl,
             auth: auth,
             patient: p.patientId
-        });
+        }, { http: Adapter.get().http, defer: Adapter.get().defer });
         client.patient.read = function(){
             return client.get({resource: 'Patient'});
         };
@@ -22823,10 +22828,10 @@ function FhirClient(p) {
         url: url,
         dataType: 'blob'
       }))
-      .done(function(blob){
+      .then(function(blob){
         ret.resolve(blob);
       })
-      .fail(function(){
+      .catch(function(){
         ret.reject("Could not fetch " + url, arguments);
       });
       return ret.promise;

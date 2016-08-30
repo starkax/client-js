@@ -1,15 +1,18 @@
 (function() {
-
+    
     var smart = require('../client/entry');
+    var oauth2 = require('../client/bb-client');
+    var client = require('../client/client');
+    
+    angular.module('ng-smart', ['ng', 'ng-fhir']);
 
-    angular.module('ng-fhir', ['ng']);
-
-    angular.module('ng-fhir').provider('$fhir', function() {
+    angular.module('ng-smart').provider('$smart', function() {
         var prov;
         return prov = {
-            $get: function($http, $q) {
-                var adapter = {http: $http, defer: $q.defer, fhirjs: fhir};
-                return smart(adapter);
+            $get: function($http, $q, $fhir) {
+                var adapter = {http: $http, defer: $q.defer, fhirjs: $fhir};
+                smart(adapter);
+                return {client: client, oauth2: oauth2}
             }
         };
     });

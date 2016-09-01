@@ -9,9 +9,13 @@
     angular.module('ng-smart').provider('$smart', function() {
         var prov;
         return prov = {
-            $get: function($http, $q, $fhir) {
-                var adapter = {http: $http, defer: $q.defer, fhirjs: $fhir};
+            $get: function($http, $q, $fhir, $window) {
+                var adapter = {http: $http, defer: $q.defer, fhirjs: $fhir, window: $window};
+
+                // Set the adapter
                 smart(adapter);
+                
+                // Return the smart object.  this will be used to initilize the client with the correct adapter
                 return {client: client, oauth2: oauth2}
             }
         };

@@ -22251,9 +22251,13 @@ module.exports = function jwa(algorithm) {
     angular.module('ng-smart').provider('$smart', function() {
         var prov;
         return prov = {
-            $get: function($http, $q, $fhir) {
-                var adapter = {http: $http, defer: $q.defer, fhirjs: $fhir};
+            $get: function($http, $q, $fhir, $window) {
+                var adapter = {http: $http, defer: $q.defer, fhirjs: $fhir, window: $window};
+
+                // Set the adapter
                 smart(adapter);
+                
+                // Return the smart object.  this will be used to initilize the client with the correct adapter
                 return {client: client, oauth2: oauth2}
             }
         };
@@ -22283,12 +22287,15 @@ var jwt = require('jsonwebtoken');
 
 var BBClient = module.exports =  {debug: true}
 
+
 function urlParam(p, forceArray) {
+  var $window = Adapter.get().window || window;
+
   if (forceArray === undefined) {
     forceArray = false;
   }
 
-  var query = location.search.substr(1);
+  var query = $window.location.search.substr(1);
   var data = query.split("&");
   var result = [];
 
@@ -22317,14 +22324,18 @@ function stripTrailingSlash(str) {
 }
 
 function getPreviousToken(){
-  var ret = sessionStorage.tokenResponse;
+  var $window = Adapter.get().window || window;
+
+  var ret = $window.sessionStorage.tokenResponse;
   if (ret) ret = JSON.parse(ret);
   return ret;
 }
 
 function completeTokenFlow(hash){
+  var $window = Adapter.get().window || window;
+
   if (!hash){
-    hash = window.location.hash;
+    hash = $window.location.hash;
   }
   var ret = Adapter.get().defer();
 
@@ -22346,6 +22357,8 @@ function completeTokenFlow(hash){
 }
 
 function completeCodeFlow(params){
+  var $window = Adapter.get().window || window;
+
   if (!params){
     params = {
       code: urlParam('code'),
@@ -22354,10 +22367,10 @@ function completeCodeFlow(params){
   }
   
   var ret = Adapter.get().defer();
-  var state = JSON.parse(sessionStorage[params.state]);
+  var state = JSON.parse($window.sessionStorage[params.state]);
 
-  if (window.history.replaceState && BBClient.settings.replaceBrowserHistory){
-    window.history.replaceState({}, "", window.location.toString().replace(window.location.search, ""));
+  if ($window.history.replaceState && BBClient.settings.replaceBrowserHistory){
+    $window.history.replaceState({}, "", $window.location.toString().replace($window.location.search, ""));
   }
 
   var data = {
@@ -22444,6 +22457,7 @@ BBClient.settings = {
 };
 
 BBClient.ready = function(input, callback, errback){
+  var $window = Adapter.get().window || window;
 
   var args = readyArgs.apply(this, arguments);
 
@@ -22451,7 +22465,7 @@ BBClient.ready = function(input, callback, errback){
   var isCode = urlParam('code') || (args.input && args.input.code);
 
   var accessTokenResolver = null;
-  if (sessionStorage.tokenResponse) { // we're reloading after successful completion
+  if ($window.sessionStorage.tokenResponse) { // we're reloading after successful completion
     accessTokenResolver = completePageReload();
   } else if (isCode) { // code flow
     accessTokenResolver = completeCodeFlow(args.input);
@@ -22464,9 +22478,9 @@ BBClient.ready = function(input, callback, errback){
       return args.errback("No 'state' parameter found in authorization response.");
     }
     
-    sessionStorage.tokenResponse = JSON.stringify(tokenResponse);
+    $window.sessionStorage.tokenResponse = JSON.stringify(tokenResponse);
 
-    var state = JSON.parse(sessionStorage[tokenResponse.state]);
+    var state = JSON.parse($window.sessionStorage[tokenResponse.state]);
     if (state.fake_token_response) {
       tokenResponse = state.fake_token_response;
     }
@@ -22496,7 +22510,7 @@ BBClient.ready = function(input, callback, errback){
     ret.tokenResponse = JSON.parse(JSON.stringify(tokenResponse));
     args.callback(ret);
 
-  }).fail(function(){
+  }).catch(function(){
     args.errback("Failed to obtain access token.");
   });
 
@@ -22572,7 +22586,9 @@ var noAuthFhirProvider = function(serviceUrl){
 };
 
 function relative(url){
-  return (window.location.protocol + "//" + window.location.host + window.location.pathname).match(/(.*\/)[^\/]*/)[1] + url;
+  var $window = Adapter.get().window || window;
+
+  return ($window.location.protocol + "//" + $window.location.host + $window.location.pathname).match(/(.*\/)[^\/]*/)[1] + url;
 }
 
 function isBypassOAuth(){
@@ -22587,6 +22603,7 @@ function bypassOAuth(fhirServiceUrl, callback){
 }
 
 BBClient.authorize = function(params, errback){
+  var $window = Adapter.get().window || window;
 
   if (!errback){
     errback = function(){
@@ -22594,8 +22611,8 @@ BBClient.authorize = function(params, errback){
     };
   }
   
-  // prevent inheritance of tokenResponse from parent window
-  delete sessionStorage.tokenResponse;
+  // prevent inheritance of tokenResponse from parent $window
+  delete $window.sessionStorage.tokenResponse;
 
   if (!params.client){
     params = {
@@ -22643,13 +22660,13 @@ BBClient.authorize = function(params, errback){
     var client = params.client;
 
     if (params.provider.oauth2 == null) {
-      sessionStorage[state] = JSON.stringify(params);
-      sessionStorage.tokenResponse = JSON.stringify({state: state});
-      window.location.href = client.redirect_uri + "#state="+encodeURIComponent(state);
+      $window.sessionStorage[state] = JSON.stringify(params);
+      $window.sessionStorage.tokenResponse = JSON.stringify({state: state});
+      $window.location.href = client.redirect_uri + "#state="+encodeURIComponent(state);
       return;
     }
 
-    sessionStorage[state] = JSON.stringify(params);
+    $window.sessionStorage[state] = JSON.stringify(params);
 
     console.log("sending client reg", params.client);
 
@@ -22665,7 +22682,7 @@ BBClient.authorize = function(params, errback){
        redirect_to += "&launch="+encodeURIComponent(client.launch);
     }
 
-    window.location.href = redirect_to;
+    $window.location.href = redirect_to;
   }, errback);
 };
 
@@ -22736,7 +22753,7 @@ function FhirClient(p) {
     client.api = fhir({
         baseUrl: server.serviceUrl,
         auth: auth
-    }, {http: Adapter.get().http, defer: Adapter.get().defer});
+    }, Adapter.get());
     
     if (p.patientId) {
         client.patient = {};
@@ -22745,7 +22762,7 @@ function FhirClient(p) {
             baseUrl: server.serviceUrl,
             auth: auth,
             patient: p.patientId
-        }, { http: Adapter.get().http, defer: Adapter.get().defer });
+        }, Adapter.get());
         client.patient.read = function(){
             return client.get({resource: 'Patient'});
         };

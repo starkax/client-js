@@ -9,8 +9,8 @@
     angular.module('ng-smart').provider('$smart', function() {
         var prov;
         return prov = {
-            $get: function($http, $q, $fhir, $window) {
-                var adapter = {http: $http, defer: $q.defer, fhirjs: $fhir, window: $window};
+            $get: function($http, $q, $fhir) {
+                var adapter = {http: $http, defer: $q.defer, fhirjs: $fhir};
 
                 // Set the adapter
                 smart(adapter);

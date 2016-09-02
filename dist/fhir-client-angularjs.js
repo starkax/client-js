@@ -22479,7 +22479,7 @@ BBClient.ready = function(input, callback, errback){
 
     var fhirClientParams = {
       serviceUrl: state.provider.url,
-      patientId: tokenResponse.patient
+      patientId: state.patient ||tokenResponse.patient
     };
     
     if (tokenResponse.id_token) {

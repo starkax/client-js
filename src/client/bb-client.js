@@ -355,6 +355,11 @@ BBClient.authorize = function(params, errback){
     }
   }
 
+  var patient = urlParam("patient");
+  if (patient) {
+      params.patient = patient;
+  }
+
   if (urlParam("patientId")){
     params.fake_token_response = params.fake_token_response || {};
     params.fake_token_response.patient = urlParam("patientId");

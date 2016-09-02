@@ -22625,7 +22625,7 @@ BBClient.authorize = function(params, errback){
   var launch = urlParam("launch");
   if (launch){
     if (!params.client.scope.match(/launch/)){
-      params.client.scope += " launch";
+      params.client.scope += " scope";
     }
     params.client.launch = launch;
   }
@@ -22635,6 +22635,11 @@ BBClient.authorize = function(params, errback){
     if (!params.server){
       params.server = server;
     }
+  }
+
+  var patient = urlParam("patient");
+  if (patient) {
+      params.patient = patient;
   }
 
   if (urlParam("patientId")){
